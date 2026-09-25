@@ -5,6 +5,7 @@ import { calcGoals, previsao, imc, tdee, ATIVIDADE_LABEL } from './nutrition.js'
 import * as foods from './foods.js';
 import * as game from './gamify.js';
 import * as reminders from './reminders.js';
+import * as barcode from './barcode.js';
 
 const app = document.getElementById('app');
 const tabbar = document.getElementById('tabbar');
@@ -21,6 +22,8 @@ function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 function n0(x) { return Math.round(x).toLocaleString('pt-BR'); }
 function n1(x) { return (Math.round(x * 10) / 10).toLocaleString('pt-BR'); }
 
+let scannerStop = null; // funcao para encerrar a camera, se ativa
+
 let toastTimer;
 export function toast(msg, kind = '') {
   toastEl.className = 'toast' + (kind ? ' ' + kind : '');
@@ -36,6 +39,7 @@ export function openSheet(html) {
   document.body.style.overflow = 'hidden';
 }
 export function closeSheet() {
+  if (scannerStop) { try { scannerStop(); } catch {} scannerStop = null; }
   modal.hidden = true;
   modalContent.innerHTML = '';
   document.body.style.overflow = '';
@@ -245,7 +249,8 @@ function abrirBusca(meal) {
     <h2>Adicionar alimento</h2>
     <div class="seg" style="margin-bottom:12px" id="mealSeg">${mealOpts}</div>
     <input id="q" type="search" placeholder="Buscar (ex: arroz, feijão, banana)" autocomplete="off" />
-    <div class="row wrap" style="margin:12px 0 6px">
+    <button class="btn secondary" id="scanBtn" style="margin:12px 0 6px">📷 Escanear código de barras</button>
+    <div class="row wrap" style="margin:6px 0">
       <button class="chip" id="tabTaco">Alimentos (TACO)</button>
       <button class="chip" id="tabFav">⭐ Favoritos</button>
       <button class="chip" id="tabMeus">🍲 Meus pratos</button>
@@ -274,8 +279,56 @@ function abrirBusca(meal) {
   document.getElementById('tabFav').onclick = () => { aba = 'fav'; pintar(); };
   document.getElementById('tabMeus').onclick = () => { aba = 'meus'; pintar(); };
   document.getElementById('novoAlim').onclick = () => criarAlimento();
+  document.getElementById('scanBtn').onclick = () => abrirScanner();
   pintar();
   setTimeout(() => q.focus(), 100);
+}
+
+/* ---------- Scanner de codigo de barras ---------- */
+function abrirScanner() {
+  openSheet(`
+    <h2>📷 Escanear código de barras</h2>
+    <p class="muted small">Aponte a câmera para o código de barras do produto. Consultamos a base aberta Open Food Facts (envia só o número do código, precisa de internet na 1ª vez).</p>
+    <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:4/3;margin-bottom:12px">
+      <video id="scanVid" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+      <div style="position:absolute;inset:18% 12%;border:3px solid rgba(255,255,255,.9);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.25)"></div>
+    </div>
+    <div id="scanStatus" class="note center">Iniciando câmera…</div>
+    <hr class="hr"/>
+    <label>Ou digite o número do código</label>
+    <div class="row" style="gap:10px">
+      <input id="scanManual" type="number" inputmode="numeric" placeholder="Ex: 7891000100103" class="grow"/>
+      <button class="btn small" id="scanBuscar" style="width:auto">Buscar</button>
+    </div>
+  `);
+
+  const status = () => document.getElementById('scanStatus');
+  const vid = document.getElementById('scanVid');
+
+  const processar = async (code) => {
+    if (!code) return;
+    if (status()) status().textContent = `Buscando ${code}…`;
+    const res = await barcode.lookup(code);
+    if (res.food) {
+      if (!res.cached) barcode.salvarProduto(res.food);
+      escolherQtd(res.food.id); // fecha a camera (closeSheet) e abre a quantidade
+    } else if (res.notFound) {
+      toast('Produto não encontrado na base');
+      criarAlimento({ nome: '', barcode: code });
+    } else {
+      if (status()) status().innerHTML = '⚠️ Sem internet para consultar agora. Tente de novo com conexão, ou digite o alimento manualmente.';
+    }
+  };
+
+  document.getElementById('scanBuscar').onclick = () => processar(document.getElementById('scanManual').value.trim());
+
+  if (!barcode.suportaCamera()) {
+    if (status()) status().textContent = 'Câmera indisponível neste navegador. Você pode digitar o número do código abaixo.';
+    return;
+  }
+  barcode.iniciarScanner(vid, (code) => processar(code))
+    .then((stop) => { scannerStop = stop; if (status()) status().textContent = 'Procurando código…'; })
+    .catch(() => { if (status()) status().textContent = 'Não consegui acessar a câmera. Verifique a permissão ou digite o código manualmente.'; });
 }
 
 const AVISO_LABEL = { 'nao-vegano': 'não vegano', 'nao-vegetariano': 'não vegetariano', lactose: 'lactose', gluten: 'glúten', carne_vermelha: 'carne vermelha', frutos_mar: 'frutos do mar', ovo: 'ovo', acucar: 'açúcar' };
@@ -369,11 +422,11 @@ function escolherQtd(id) {
   };
 }
 
-function criarAlimento() {
+function criarAlimento(prefill = {}) {
   openSheet(`
     <h2>Criar alimento</h2>
-    <p class="muted small">Valores por 100 g (ou por porção — o que preferir).</p>
-    <div class="field"><label>Nome</label><input id="cn" placeholder="Ex: Tapioca com queijo"/></div>
+    <p class="muted small">Valores por 100 g (ou por porção — o que preferir).${prefill.barcode ? ' Código: ' + esc(prefill.barcode) : ''}</p>
+    <div class="field"><label>Nome</label><input id="cn" value="${esc(prefill.nome || '')}" placeholder="Ex: Tapioca com queijo"/></div>
     <div class="grid2">
       <div class="field"><label>Calorias (kcal)</label><input id="ck" type="number" inputmode="numeric"/></div>
       <div class="field"><label>Proteína (g)</label><input id="cp" type="number" inputmode="decimal"/></div>
@@ -386,13 +439,14 @@ function criarAlimento() {
     const nome = document.getElementById('cn').value.trim();
     if (!nome) { toast('Dê um nome ao alimento'); return; }
     const item = {
-      id: 'c' + Date.now(), nome,
+      id: prefill.barcode ? 'b' + prefill.barcode : 'c' + Date.now(), nome,
       kcal: +document.getElementById('ck').value || 0,
       prot: +document.getElementById('cp').value || 0,
       carb: +document.getElementById('cc').value || 0,
       gord: +document.getElementById('cg').value || 0,
       por_g: 100,
     };
+    if (prefill.barcode) item.barcode = prefill.barcode;
     update((s) => s.customFoods.push(item));
     toast('Alimento criado! 🍲');
     escolherQtd(item.id);

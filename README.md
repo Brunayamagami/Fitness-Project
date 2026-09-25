@@ -32,6 +32,7 @@ Abra `http://localhost:8080` no navegador.
 
 - **Meta calórica personalizada** — calculada a partir do seu perfil (fórmula Mifflin-St Jeor) e do ritmo de emagrecimento que você escolher.
 - **Registro rápido de refeições** — busca em **597 alimentos brasileiros** da TACO, com favoritos, criação dos seus próprios alimentos e pratos salvos.
+- **Leitor de código de barras** 📷 — escaneie produtos industrializados e o app busca os dados na base aberta **Open Food Facts** (você só confere a quantidade). O produto lido fica salvo para reuso e funciona offline depois.
 - **Preferências alimentares** — estilo (onívoro/vegetariano/vegano) e itens a evitar (lactose, glúten, etc.), com avisos na busca.
 - **Acompanhamento de calorias e macros** (proteína, carbo, gordura) e **meta de água**.
 - **Gamificação** — sequência de dias (streak 🔥), XP, níveis e conquistas.
@@ -43,7 +44,7 @@ Abra `http://localhost:8080` no navegador.
 
 ## 🔒 Privacidade e seus dados
 
-Tudo é salvo **localmente** no navegador do seu celular (armazenamento do próprio aparelho). O app **não** envia nada para nenhum servidor.
+Tudo é salvo **localmente** no navegador do seu celular (armazenamento do próprio aparelho). O app **não** envia nada para nenhum servidor. A única exceção é o **leitor de código de barras**: ao escanear, o app consulta a base aberta Open Food Facts enviando **apenas o número do código de barras** (nenhum dado seu). Você só usa isso se quiser.
 
 ⚠️ **Importante:** como é local, se você **trocar de celular, limpar os dados do navegador ou desinstalar**, os dados s0mem. Por isso existe o **backup**: em *Ajustes → Seus dados → Exportar backup*, salve o arquivo `.json` de vez em quando (no Drive, e-mail para você mesma, etc.). Para restaurar num aparelho novo, use *Importar backup*.
 
@@ -64,6 +65,7 @@ O reconhecimento de comida por foto **não** está incluído nesta versão. É a
 ## 🧾 Créditos e avisos
 
 - **Base de alimentos:** Tabela Brasileira de Composição de Alimentos — **TACO, 4ª edição (NEPA/UNICAMP, 2011)**. 597 alimentos, valores por 100 g de porção comestível. JSON de origem sob licença MIT (`marcelosanto/tabela_taco`).
+- **Produtos com código de barras:** dados da **Open Food Facts** (open.foodfacts.org), base colaborativa sob licença ODbL. Leitura de código feita com a biblioteca **ZXing** (Apache-2.0), quando o navegador não tem leitor nativo.
 - Este é um app **pessoal e informativo**. **Não substitui** orientação de nutricionista ou médico. Metas calóricas são estimativas.
 
 ---
@@ -84,6 +86,8 @@ js/
   foods.js       base de alimentos, busca, preferências
   gamify.js      XP, níveis, streak, conquistas
   reminders.js   lembretes por notificação
+  barcode.js     leitor de código de barras + Open Food Facts
+  vendor/zxing.js  biblioteca de leitura (fallback p/ iPhone/Safari)
   ui.js          todas as telas e interações
 ```
 
