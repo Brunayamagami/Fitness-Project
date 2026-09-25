@@ -1,0 +1,8 @@
+# Ferramentas usadas só para testar o app (não fazem parte do app em si)
+node_modules/
+package.json
+package-lock.json
+
+# Sistema
+.DS_Store
+*.log

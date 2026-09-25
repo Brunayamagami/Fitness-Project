@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>Leve — sua jornada</title>
+  <meta name="description" content="Diario de calorias gamificado e privado, com alimentos brasileiros (TACO)." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Leve" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="app" aria-live="polite"></div>
+
+  <!-- Barra de navegacao inferior -->
+  <nav id="tabbar" class="tabbar" hidden>
+    <button class="tab" data-view="hoje" aria-label="Hoje">
+      <span class="ico">🍽️</span><span class="lbl">Hoje</span>
+    </button>
+    <button class="tab" data-view="progresso" aria-label="Progresso">
+      <span class="ico">📈</span><span class="lbl">Progresso</span>
+    </button>
+    <button class="tab tab-fab" data-view="add" aria-label="Registrar refeicao">
+      <span class="fab">＋</span>
+    </button>
+    <button class="tab" data-view="conquistas" aria-label="Conquistas">
+      <span class="ico">🏆</span><span class="lbl">Conquistas</span>
+    </button>
+    <button class="tab" data-view="ajustes" aria-label="Ajustes">
+      <span class="ico">⚙️</span><span class="lbl">Ajustes</span>
+    </button>
+  </nav>
+
+  <!-- Modal generico -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
