@@ -2,7 +2,7 @@
  * Faz o app funcionar sem internet, guardando os arquivos em cache.
  * Ao publicar uma nova versao, mude o CACHE (ex: leve-v2) que o app se atualiza.
  */
-const CACHE = 'leve-v2';
+const CACHE = 'leve-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -16,8 +16,10 @@ const ASSETS = [
   './js/reminders.js',
   './js/barcode.js',
   './js/vendor/zxing.js',
+  './js/recipes.js',
   './js/ui.js',
   './data/foods.json',
+  './data/recipes.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png',

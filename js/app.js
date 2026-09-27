@@ -1,6 +1,7 @@
 /* app.js — inicializacao. */
 import { get } from './store.js';
 import { loadFoods } from './foods.js';
+import { loadRecipes } from './recipes.js';
 import * as ui from './ui.js';
 import { agendar as agendarLembretes } from './reminders.js';
 
@@ -15,6 +16,7 @@ async function boot() {
       '<div class="card center"><h2>Ops</h2><p class="muted">Não consegui carregar a base de alimentos. Recarregue a página.</p></div>';
     throw new Error('foods');
   });
+  await loadRecipes(); // receitas curadas (não bloqueia se falhar)
 
   if (!get().onboarded) {
     ui.mountOnboarding(() => start());

@@ -191,8 +191,9 @@ input:focus, select:focus { outline: 2px solid var(--green); border-color: var(-
   border-top: 1px solid var(--line);
   padding: 8px 8px calc(8px + var(--safe-b));
 }
-.tab { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: .68rem; font-weight: 600; padding: 4px 8px; flex: 1; }
-.tab .ico { font-size: 1.25rem; }
+.tab { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: .62rem; font-weight: 600; padding: 4px 3px; flex: 1; min-width: 0; }
+.tab .lbl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab .ico { font-size: 1.2rem; }
 .tab.active { color: var(--green); }
 .tab-fab { flex: 0 0 auto; }
 .tab-fab .fab {

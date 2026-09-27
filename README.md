@@ -33,6 +33,7 @@ Abra `http://localhost:8080` no navegador.
 - **Meta calórica personalizada** — calculada a partir do seu perfil (fórmula Mifflin-St Jeor) e do ritmo de emagrecimento que você escolher.
 - **Registro rápido de refeições** — busca em **597 alimentos brasileiros** da TACO, com favoritos, criação dos seus próprios alimentos e pratos salvos.
 - **Leitor de código de barras** 📷 — escaneie produtos industrializados e o app busca os dados na base aberta **Open Food Facts** (você só confere a quantidade). O produto lido fica salvo para reuso e funciona offline depois.
+- **Receitas** 🍳 — receitas curadas e ajustadas às suas preferências (airfryer, seus alimentos, doces fit), com calorias/macros calculados, modo de preparo e botão para registrar direto no diário. Você também salva as suas em "Minhas receitas".
 - **Preferências alimentares** — estilo (onívoro/vegetariano/vegano) e itens a evitar (lactose, glúten, etc.), com avisos na busca.
 - **Acompanhamento de calorias e macros** (proteína, carbo, gordura) e **meta de água**.
 - **Gamificação** — sequência de dias (streak 🔥), XP, níveis e conquistas.
@@ -87,8 +88,10 @@ js/
   gamify.js      XP, níveis, streak, conquistas
   reminders.js   lembretes por notificação
   barcode.js     leitor de código de barras + Open Food Facts
+  recipes.js     carrega as receitas curadas
   vendor/zxing.js  biblioteca de leitura (fallback p/ iPhone/Safari)
   ui.js          todas as telas e interações
+data/recipes.json  receitas curadas (macros calculados)
 ```
 
 Código 100% estático: **não precisa de build nem de servidor** para funcionar. Feito para ser fácil de manter e ajustar.

@@ -6,6 +6,7 @@ import * as foods from './foods.js';
 import * as game from './gamify.js';
 import * as reminders from './reminders.js';
 import * as barcode from './barcode.js';
+import * as recipes from './recipes.js';
 
 const app = document.getElementById('app');
 const tabbar = document.getElementById('tabbar');
@@ -78,6 +79,7 @@ export function initTabbar() {
 
 function render() {
   if (current === 'hoje') return renderHoje();
+  if (current === 'receitas') return renderReceitas();
   if (current === 'progresso') return renderProgresso();
   if (current === 'conquistas') return renderConquistas();
   if (current === 'ajustes') return renderAjustes();
@@ -459,6 +461,8 @@ function aoRegistrar(msg) {
   const up = game.addXp(10);
   const novas = game.avaliarConquistas();
   closeSheet();
+  current = 'hoje';
+  highlightTab('hoje');
   renderHoje();
   toast(msg, 'xp');
   if (up.subiu) setTimeout(() => anunciarNivel(up.level), 700);
@@ -599,6 +603,158 @@ function renderConquistas() {
       </div>`).join('')}
     </div>
   `;
+}
+
+/* ==================== RECEITAS ==================== */
+let receitaCat = 'tudo';
+
+function renderReceitas() {
+  const lista = recipes.porCategoria(receitaCat);
+  const chips = recipes.CATEGORIAS.map((c) =>
+    `<button class="chip ${c.id === receitaCat ? 'on' : ''}" data-cat="${c.id}">${c.label}</button>`).join('');
+
+  const cards = lista.map((r) => `
+    <div class="card tight" data-rec="${r.id}" style="cursor:pointer">
+      <div class="row spread">
+        <div style="min-width:0">
+          <div style="font-weight:700">${r.emoji} ${esc(r.nome)}</div>
+          <div class="muted small">⏱ ${r.tempo} min · ${(r.tags||[]).map(esc).join(' · ')}</div>
+        </div>
+        <div class="center" style="flex:0 0 auto">
+          <div style="font-weight:800">${n0(r.total.kcal)}</div>
+          <div class="muted small">kcal</div>
+        </div>
+      </div>
+      <div class="macros" style="margin-top:8px">
+        <div class="macro"><div class="v">${n1(r.total.prot)}g</div><div class="l">Proteína</div></div>
+        <div class="macro"><div class="v">${n1(r.total.carb)}g</div><div class="l">Carbo</div></div>
+        <div class="macro"><div class="v">${n1(r.total.gord)}g</div><div class="l">Gordura</div></div>
+      </div>
+    </div>`).join('');
+
+  const meus = get().savedMeals;
+  const meusHtml = receitaCat === 'tudo' && meus.length ? `
+    <h2 style="margin:18px 2px 8px">🍲 Minhas receitas</h2>
+    ${meus.map((p) => {
+      const kc = p.itens.reduce((a, i) => a + i.kcal, 0);
+      return `<div class="card tight" data-prato="${p.id}" style="cursor:pointer">
+        <div class="row spread"><div style="font-weight:700">🍲 ${esc(p.nome)}</div>
+        <div class="center"><div style="font-weight:800">${n0(kc)}</div><div class="muted small">kcal</div></div></div>
+        <div class="muted small">${p.itens.length} itens</div></div>`;
+    }).join('')}` : '';
+
+  app.innerHTML = `
+    <div class="row spread" style="margin-bottom:8px">
+      <h1>Receitas</h1>
+    </div>
+    <p class="muted small" style="margin-bottom:12px">Ajustadas às suas preferências — airfryer, seus alimentos e doces fit. Valores por porção; ajuste as gramas conforme sua fome. 💚</p>
+    <div class="row wrap" id="recCats" style="margin-bottom:14px">${chips}</div>
+    ${cards || '<div class="empty"><span class="em">🍳</span>Sem receitas nesta categoria.</div>'}
+    ${meusHtml}
+  `;
+
+  app.querySelectorAll('[data-cat]').forEach((b) => b.onclick = () => { receitaCat = b.dataset.cat; renderReceitas(); });
+  app.querySelectorAll('[data-rec]').forEach((c) => c.onclick = () => abrirReceita(c.dataset.rec));
+  app.querySelectorAll('[data-prato]').forEach((c) => c.onclick = () => abrirPratoSalvo(c.dataset.prato));
+}
+
+function abrirReceita(id) {
+  const r = recipes.byId(id);
+  if (!r) return;
+  const ings = r.ingredientes.map((i) =>
+    `<div class="row spread" style="padding:6px 2px;border-bottom:1px solid var(--line)">
+      <span>${esc(i.nome)}</span>
+      <span class="muted small">${n0(i.g)} g · ${n0(i.kcal)} kcal</span>
+    </div>`).join('');
+  const passos = r.passos.map((p, i) =>
+    `<div class="row" style="gap:10px;align-items:flex-start;margin-bottom:8px">
+      <span class="badge green" style="flex:0 0 auto">${i + 1}</span><span>${esc(p)}</span>
+    </div>`).join('');
+
+  openSheet(`
+    <h2>${r.emoji} ${esc(r.nome)}</h2>
+    <div class="card tight" style="margin-bottom:12px">
+      <div class="row spread"><strong>${n0(r.total.kcal)} kcal</strong>
+        <span class="muted small">P ${n1(r.total.prot)} · C ${n1(r.total.carb)} · G ${n1(r.total.gord)}</span></div>
+      <div class="muted small">⏱ ${r.tempo} min · 1 porção</div>
+    </div>
+    <h3>Ingredientes</h3>
+    <div style="margin-bottom:14px">${ings}</div>
+    <h3>Modo de preparo</h3>
+    <div style="margin-bottom:16px">${passos}</div>
+    <label>Registrar em qual refeição?</label>
+    <div class="seg" id="recMeal" style="margin:6px 0 14px">
+      ${(get().prefs.refeicoes || ['almoco']).map((m, idx) =>
+        `<button data-m="${m}" class="${idx === 0 ? 'on' : ''}">${(MEAL_LABELS[m]||m).replace(/^\S+\s/, '')}</button>`).join('')}
+    </div>
+    <div class="stack">
+      <button class="btn" id="recRegistrar">Registrar no diário (+${n0(r.total.kcal)} kcal)</button>
+      <button class="btn secondary" id="recSalvar">🍲 Salvar em “Minhas receitas”</button>
+    </div>
+  `);
+
+  let meal = (get().prefs.refeicoes || ['almoco'])[0];
+  document.getElementById('recMeal').querySelectorAll('button').forEach((b) => b.onclick = () => {
+    meal = b.dataset.m;
+    document.getElementById('recMeal').querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on');
+  });
+
+  document.getElementById('recRegistrar').onclick = () => {
+    update((s) => {
+      const d = dayEntry(viewDate);
+      if (!d.meals[meal]) d.meals[meal] = [];
+      d.meals[meal].push({ foodId: 'rec:' + r.id, nome: r.nome, qtd_g: r.ingredientes.reduce((a, i) => a + i.g, 0),
+        kcal: r.total.kcal, prot: r.total.prot, carb: r.total.carb, gord: r.total.gord });
+    });
+    aoRegistrar(`Receita registrada! +${n0(r.total.kcal)} kcal 🍽️`);
+  };
+  document.getElementById('recSalvar').onclick = () => {
+    update((s) => {
+      if (!s.savedMeals.find((p) => p.id === 'rec:' + r.id)) {
+        s.savedMeals.push({ id: 'rec:' + r.id, nome: r.nome, itens: [{ foodId: 'rec:' + r.id, nome: r.nome,
+          qtd_g: r.ingredientes.reduce((a, i) => a + i.g, 0), kcal: r.total.kcal, prot: r.total.prot, carb: r.total.carb, gord: r.total.gord }] });
+      }
+    });
+    toast('Salvo em Minhas receitas 🍲');
+  };
+}
+
+function abrirPratoSalvo(id) {
+  const p = get().savedMeals.find((x) => x.id === id);
+  if (!p) return;
+  const kc = p.itens.reduce((a, i) => a + i.kcal, 0);
+  openSheet(`
+    <h2>🍲 ${esc(p.nome)}</h2>
+    <div class="card tight"><div class="row spread"><strong>${n0(kc)} kcal</strong><span class="muted small">${p.itens.length} itens</span></div></div>
+    <label style="margin-top:12px">Registrar em qual refeição?</label>
+    <div class="seg" id="pMeal" style="margin:6px 0 14px">
+      ${(get().prefs.refeicoes || ['almoco']).map((m, idx) =>
+        `<button data-m="${m}" class="${idx === 0 ? 'on' : ''}">${(MEAL_LABELS[m]||m).replace(/^\S+\s/, '')}</button>`).join('')}
+    </div>
+    <div class="stack">
+      <button class="btn" id="pReg">Registrar no diário</button>
+      <button class="btn danger" id="pDel">Remover das minhas receitas</button>
+    </div>
+  `);
+  let meal = (get().prefs.refeicoes || ['almoco'])[0];
+  document.getElementById('pMeal').querySelectorAll('button').forEach((b) => b.onclick = () => {
+    meal = b.dataset.m;
+    document.getElementById('pMeal').querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on');
+  });
+  document.getElementById('pReg').onclick = () => {
+    update((s) => {
+      const d = dayEntry(viewDate);
+      if (!d.meals[meal]) d.meals[meal] = [];
+      p.itens.forEach((it) => d.meals[meal].push({ ...it }));
+    });
+    aoRegistrar('Registrado! 🍲');
+  };
+  document.getElementById('pDel').onclick = () => {
+    update((s) => { const i = s.savedMeals.findIndex((x) => x.id === id); if (i >= 0) s.savedMeals.splice(i, 1); });
+    closeSheet(); renderReceitas(); toast('Removido');
+  };
 }
 
 /* ==================== AJUSTES ==================== */
